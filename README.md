@@ -1,12 +1,19 @@
 # mseed2wa
 Miniseed to WoodAnderson
 
+## Clone
+```
+$ git clone git@github.com:INGV/mseed2wa.git
+```
+
 ## Build
 ```
-docker build --tag mseed2wa .
+$ cd mseed2wa
+$ docker build --tag mseed2wa .
 ```
 
 ## Run
 ```
-docker run -it --rm -v $(pwd)/input:/tmp/input -v $(pwd)/output:/tmp/output mseed2wa bash
+$ cd mseed2wa
+$ docker run -it --rm -v $(pwd)/input:/tmp/input -v $(pwd)/output:/tmp/output mseed2wa bash
 ```
