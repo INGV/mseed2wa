@@ -6,6 +6,7 @@
 #
 import os
 import argparse
+import sys
 
 from math import log10
 
@@ -109,7 +110,7 @@ if __name__ == "__main__":
         ST += read(N_mseed)
     except:
         print ("ERROR: wrong address or incorrect  mseed data\nEXIT")
-        quit()
+        sys.exit(1)
     #
     # get the start and end times from the header of the stream
     starttime = ST[0].stats.starttime
