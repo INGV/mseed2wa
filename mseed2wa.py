@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("mseed_E", help="provide the name of the E-component input mseed file (e.g., 'IV.BRIS..HHE.mseed')")
     parser.add_argument("mseed_N", help="provide the name of the N-component input mseed file (e.g., 'IV.BRIS..HHN.mseed')")
     parser.add_argument("--outdir", help="provide the name of the output directory (default, '.')")
-    # parser.add_argument("--inxml", help="provide the name of the xml directory (default, '.')")
+    parser.add_argument("--inxml", help="provide the name of the xml directory (default, '.')")
     parser.add_argument('--outwavals', dest='outwavals', action='store_true',
                         help="output half peak-2-peak  (default: False)")
     # parser.add_argument('--no-outwavals', dest='feature', action='store_false')
@@ -93,14 +93,16 @@ if __name__ == "__main__":
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
 
-    # ###### NEEDED ONLY WITH THE PROCEDURE THAT READS THE XML FILE ###########
-    # if args.inxml is None:
-    #     STAXML_DIR = '.'
-    # else:
-    #     STAXML_DIR = args.inxml
-    #     if not os.path.isdir(STAXML_DIR):
-    #         os.mkdir(STAXML_DIR)
-    # ###### END ONLY WITH THE PROCEDURE THAT READS THE XML FILE ###########
+    ###### NEEDED ONLY WITH THE PROCEDURE THAT READS THE XML FILE ###########
+    if args.inxml is None:
+        # skip. The response will be obtained from the web webservices
+        pass
+        # STAXML_DIR = '.'
+    else:
+        STAXML_DIR = args.inxml
+        # if not os.path.isdir(STAXML_DIR):
+        #     os.mkdir(STAXML_DIR)
+    ###### END ONLY WITH THE PROCEDURE THAT READS THE XML FILE ###########
 
 
     # Read the  2 input mseed files
@@ -116,30 +118,49 @@ if __name__ == "__main__":
     starttime = ST[0].stats.starttime
     endtime = ST[0].stats.endtime
     #
+    # get the informtion about station and network from the mseed
     net = ST[0].stats.network
     sta = ST[0].stats.station
+    loc = ST[0].stats.location
     staname = "%s_%s.xml" % (net,sta)
-    # loc = ST[0].stats.location
     #
-    # get the response function in xml format
-
-    client = Client("INGV")
+    # get the response function in xml format from the webservices
+    if args.inxml is None:
+        print ('obtain the station info from the webservices ')
+        client = Client("INGV")
     # station_resp = client.get_stations(network=net, station=sta, channel="*", level="response")
-    inv = client.get_stations(network=net, station=sta, starttime=starttime, endtime=endtime, level="response")
+        inv = client.get_stations(network=net, station=sta, starttime=starttime, endtime=endtime, level="response")
     #
-    #### START aALTERNATIVE WAY TO GET THE STATION by downloading the station_xml
-    # get the station
-    # if not os.path.isdir(STAXML_DIR):
-    #     os.mkdir(STAXML_DIR)
-    # print (net, sta)
+    #### START aALTERNATIVE WAY TO GET THE STATION from  the downloaded 'response' directory containing the
+    # stationxml files
+    else:
+    # check if the directory exists
+        print ('obtain the station info from the stored stationxml file')
+        if not os.path.isdir(STAXML_DIR):
+            print ("ERROR: the directory with the stationxml files does not exist - exit(1)")
+            exit(1)
+        else:
+            # compose the name of tha stationxml file
+            # print (net, sta)
+            station_xml = os.path.join(STAXML_DIR,staname)
+            if os.path.isfile(station_xml):
+                try:
+                    inv = read_inventory(station_xml)
+                except:
+                    print ("ERROR: problems in reding the stationxml file - exit(1)")
+                    exit(1)
+            else:
+                print ("ERROR: the stationxml files does not exist - exit(1)")
+                exit(1)
+
+    # ##################### OLD STUFF ALTERNATIVE WAY TO GET THE STATION ######
     # command = 'curl -X GET "http://webservices.ingv.it/fdsnws/station/1/query?network=%s&station=%s&channel=*&level=response&includerestricted=true&format=xml&formatted=false&nodata=204&visibility=only&authoritative=only" -H "accept: application/xml" > %s/%s_%s.xml ' % (net,sta,STAXML_DIR,net,sta)
     # # print (command)
     # os.system(command)
     # station_xml = os.path.join(STAXML_DIR,staname)
     # inv = read_inventory(station_xml)
     #
-    # ################## END ALTERNATIVE WAY TO GET THE STATION ############
-    #
+    # ################## END ALTERNATIVE WAY TO GET THE STATION ################
     #
     stccvelNZ = remove_response(ST, pre_filt, inv)
     #
